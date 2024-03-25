@@ -34,6 +34,13 @@ def initialize_model(model_name):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
 
+def generate_equals_prompt(source_line, parallel_sources, parallel_targets):
+    prompt = ""
+    for src, tgt in zip(parallel_sources, parallel_targets):
+        prompt += f"{src} = {tgt}\n"
+    prompt += f"{source_line} ="
+    return prompt
+
 def generate_prompt(source_line, parallel_sources, parallel_targets):
     prompt = "Translate from English to Finnish\n\n"
     for src, tgt in zip(parallel_sources, parallel_targets):
@@ -57,6 +64,7 @@ def main():
     parser.add_argument("source_file", help="Path to the source file in English.")
     parser.add_argument("parallel_source_file", help="Path to the file containing English lines.")
     parser.add_argument("parallel_target_file", help="Path to the file containing Finnish lines.")
+    parser.add_argument("prompt_type", help="Whether to construct prompt with equals sign or the special symbols, values: equals, symbols.")
     args = parser.parse_args()
 
     # Initialize the language model
@@ -90,8 +98,12 @@ def main():
             line_parallel_targets = [parallel_target_lines[i].strip() for i in random_indices]
 
             # Generate prompt
-            prompt = generate_prompt(source_line.strip(), line_parallel_sources, line_parallel_targets)
-            prompts.append(prompt)
+            if args.prompt_type == "equals":
+                prompt = generate_equals_prompt(source_line.strip(), line_parallel_sources, line_parallel_targets)
+                prompts.append(prompt)
+            elif args.prompt_type == "symbols":
+                prompt = generate_prompt(source_line.strip(), line_parallel_sources, line_parallel_targets)
+                prompts.append(prompt)
             sys.stderr.write(f"prompt for line {source_line}:\n{prompt}\n")
 
         # Generate text for the batch of prompts
@@ -100,12 +112,14 @@ def main():
 
         # Print the generated text for each prompt
         for prompt,generated_text in zip(prompts,generated_texts):
-            #The problem with this approach is that HF will change the prompt in generated text,
-            #so text will be truncated
-            #cleaned = generated_text.replace("<pad>","")
-            #sys.stderr.write(f"cleaned generated text:\n{cleaned}\n") 
-            #print(cleaned[len(prompt):].split("\n")[0])
-            translation = generated_text.split("<|assistant|>")[context_size].split("\n")[0]
+            if args.prompt_type == "equals":
+                #remove the padding to make generated text length match prompt length
+                cleaned = generated_text.replace("<pad>","")
+                sys.stderr.write(f"cleaned generated text:\n{cleaned}\n") 
+                print(cleaned[len(prompt):].split("\n")[0])
+            elif args.prompt_type == "symbols":
+                translation = generated_text.split("<|assistant|>")[context_size+1].split("\n")[0]
+                print(translation)
 
 if __name__ == "__main__":
     main()
