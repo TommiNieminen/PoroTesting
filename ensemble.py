@@ -65,8 +65,10 @@ def main():
     parser.add_argument("parallel_source_file", help="Path to the file containing English lines.")
     parser.add_argument("parallel_target_file", help="Path to the file containing Finnish lines.")
     parser.add_argument("prompt_type", help="Whether to construct prompt with equals sign or the special symbols, values: equals, symbols.")
-    parser.add_argument("model_name", help="Name of the LM")
-    parser.add_argument("revision", help="Revision of the LM")
+    parser.add_argument("model1_name", help="Name of model 1")
+    parser.add_argument("model1_revision", help="Revision of model 1")
+    parser.add_argument("model2_name", help="Name of model 2")
+    parser.add_argument("model2_revision", help="Revision of model 2")
     args = parser.parse_args()
 
     # Initialize the language model
